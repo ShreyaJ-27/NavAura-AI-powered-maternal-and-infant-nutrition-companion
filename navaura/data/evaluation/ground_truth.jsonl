@@ -1,0 +1,10 @@
+{"id": "eval-001", "image_name": "steamed_banana_puree.jpg", "expected_foods": ["Steamed Banana Puree", "Banana"], "category": "Fruits", "safety_status": "safe-context"}
+{"id": "eval-002", "image_name": "oatmeal_berries.jpg", "expected_foods": ["Oatmeal Porridge", "Oats", "Berries"], "category": "Grains", "safety_status": "safe-context"}
+{"id": "eval-003", "image_name": "mashed_sweet_potato.jpg", "expected_foods": ["Mashed Sweet Potato", "Sweet Potato"], "category": "Vegetables", "safety_status": "safe-context"}
+{"id": "eval-004", "image_name": "whole_grapes_sample.jpg", "expected_foods": ["Whole Grapes"], "category": "Fruits", "safety_status": "caution"}
+{"id": "eval-005", "image_name": "avocado_toast_egg.jpg", "expected_foods": ["Avocado Mash", "Soft Scrambled Egg", "Toast"], "category": "Protein Foods", "safety_status": "safe-context"}
+{"id": "eval-006", "image_name": "red_lentil_dal.jpg", "expected_foods": ["Red Lentil Dal Puree", "Dal"], "category": "Protein Foods", "safety_status": "safe-context"}
+{"id": "eval-007", "image_name": "greek_yogurt_honey.jpg", "expected_foods": ["Greek Yogurt", "Honey"], "category": "Dairy & Alternatives", "safety_status": "needs-review"}
+{"id": "eval-008", "image_name": "steamed_carrot_sticks.jpg", "expected_foods": ["Steamed Carrot Sticks", "Carrot"], "category": "Vegetables", "safety_status": "safe-context"}
+{"id": "eval-009", "image_name": "idli_sambar.jpg", "expected_foods": ["Idli", "Dal"], "category": "Grains", "safety_status": "safe-context"}
+{"id": "eval-010", "image_name": "spinach_apple_puree.jpg", "expected_foods": ["Spinach & Apple Puree", "Spinach"], "category": "Vegetables", "safety_status": "safe-context"}

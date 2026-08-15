@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+navaura/node_modules/
+.pnp
+.pnp.js
+
+# Large Datasets & Raw Dumps (GitHub 100MB limit)
+Datasets/
+*.csv
+*.xlsx
+*.parquet
+
+# Next.js build
+navaura/.next/
+.next/
+out/
+build/
+dist/
+
+# Environment Variables
+.env
+.env*.local
+navaura/.env
+navaura/.env*.local
+navaura/.env.local
+
+# Vercel
+.vercel/
+
+# Debug logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS and Editor
+.DS_Store
+*.pem
+.idea/
+.vscode/
+*.tsbuildinfo
+next-env.d.ts
