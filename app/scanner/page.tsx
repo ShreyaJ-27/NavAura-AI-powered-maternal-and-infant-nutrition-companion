@@ -14,20 +14,6 @@ import {
   Save,
   ShieldAlert,
   Sparkles,
-} from 'lucide-react';
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import {
-  AlertCircle,
-  Baby,
-  Camera,
-  Check,
-  Heart,
-  Info,
-  RefreshCw,
-  Save,
-  ShieldAlert,
-  Sparkles,
   User,
 } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';

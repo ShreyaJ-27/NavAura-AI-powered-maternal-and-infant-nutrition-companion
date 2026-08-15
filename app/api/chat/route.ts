@@ -17,7 +17,9 @@ export async function POST(request: Request) {
         todayWaterMl?: number;
         wellnessScore?: number;
         mealsLogged?: number;
+        selectedChildId?: string;
         children?: Array<{
+          id?: string;
           name: string;
           ageMonths: number;
           ageFormatted: string;
