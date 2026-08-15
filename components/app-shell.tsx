@@ -13,6 +13,7 @@ import {
   History,
   LayoutGrid,
   LogOut,
+  Mic,
   Search,
   Settings,
   User,
@@ -22,6 +23,7 @@ import { createClient } from '@/lib/supabase/client';
 
 const generalNav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
+  { href: '/voice', label: 'Talk to NavAura', icon: Mic },
   { href: '/scanner', label: 'Meal Scanner', icon: Camera },
   { href: '/journey', label: 'Baby Journey', icon: Compass },
   { href: '/feeding', label: 'Feeding Log', icon: Baby },
@@ -41,6 +43,7 @@ const otherNav = [
 
 const mobileNavItems = [
   { href: '/dashboard', label: 'Home', icon: LayoutGrid },
+  { href: '/voice', label: 'Voice', icon: Mic },
   { href: '/scanner', label: 'Scan', icon: Camera },
   { href: '/journey', label: 'Journey', icon: Compass },
   { href: '/feeding', label: 'Feeding', icon: Baby },

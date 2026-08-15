@@ -1,5 +1,3 @@
-import { calculateBabyAge } from './age.ts';
-
 export type ChildProfile = {
   id: string;
   name: string;
@@ -48,7 +46,7 @@ export function ensureChildIds(rawChildren: Partial<ChildProfile>[]): ChildProfi
   }));
 }
 
-export function migrateLegacyProfile(raw: any): {
+export function migrateLegacyProfile(raw: Record<string, unknown> | null | undefined): {
   motherName: string;
   postpartumDate: string;
   feedingMethod: string;
@@ -57,11 +55,11 @@ export function migrateLegacyProfile(raw: any): {
   children: ChildProfile[];
   selectedChildId: string;
 } {
-  const motherName = raw?.motherName || 'Mama';
-  const postpartumDate = raw?.postpartumDate || new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString().split('T')[0];
-  const feedingMethod = raw?.feedingMethod || 'mixed';
-  const dietaryRestrictions = raw?.dietaryRestrictions || '';
-  const motherComplications = raw?.motherComplications || 'None';
+  const motherName = (typeof raw?.motherName === 'string' ? raw.motherName : '') || 'Mama';
+  const postpartumDate = (typeof raw?.postpartumDate === 'string' ? raw.postpartumDate : '') || new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString().split('T')[0];
+  const feedingMethod = (typeof raw?.feedingMethod === 'string' ? raw.feedingMethod : '') || 'mixed';
+  const dietaryRestrictions = (typeof raw?.dietaryRestrictions === 'string' ? raw.dietaryRestrictions : '') || '';
+  const motherComplications = (typeof raw?.motherComplications === 'string' ? raw.motherComplications : '') || 'None';
 
   let children: ChildProfile[] = [];
 
@@ -71,10 +69,10 @@ export function migrateLegacyProfile(raw: any): {
     children = [
       {
         id: generateChildId(),
-        name: raw.babyName || 'Little One',
-        birthDate: raw.birthDate || new Date(Date.now() - 7 * 30.4 * 24 * 3600 * 1000).toISOString().split('T')[0],
+        name: (typeof raw.babyName === 'string' ? raw.babyName : '') || 'Little One',
+        birthDate: (typeof raw.birthDate === 'string' ? raw.birthDate : '') || new Date(Date.now() - 7 * 30.4 * 24 * 3600 * 1000).toISOString().split('T')[0],
         weightKg: Number(raw.weightKg) || 7.5,
-        complications: raw.babyComplications || 'None',
+        complications: (typeof raw.babyComplications === 'string' ? raw.babyComplications : '') || 'None',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },

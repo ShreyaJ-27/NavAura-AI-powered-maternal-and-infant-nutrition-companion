@@ -240,64 +240,70 @@ export default function DashboardPage() {
     selectedChild,
   } = useChildren();
 
-  const [waterMl, setWaterMl] = useState(0);
-  const [mealsCount, setMealsCount] = useState(0);
-  const [wellnessScore, setWellnessScore] = useState<number>(3);
-  const [foodIntrosCount, setFoodIntrosCount] = useState(0);
-
-  const [activeFilter, setActiveFilter] = useState('Recovery');
-  const [chatInput, setChatInput] = useState('');
-  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'user' | 'ai'; text: string }>>([]);
-  const [isAnswering, setIsAnswering] = useState(false);
-  const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
+  const [waterMl, _setWaterMl] = useState(() => {
+    if (typeof window === 'undefined') return 0;
     try {
       const hydStr = localStorage.getItem('navaura_hydration_logs');
       if (hydStr) {
         const logs: HydrationLog[] = JSON.parse(hydStr);
         const todayStr = new Date().toISOString().split('T')[0];
-        const sum = logs
+        return logs
           .filter((l) => l.logged_at && l.logged_at.startsWith(todayStr))
           .reduce((acc, l) => acc + (Number(l.amount_ml) || 0), 0);
-        setWaterMl(sum);
       }
     } catch {}
+    return 0;
+  });
 
+  const [mealsCount, _setMealsCount] = useState(() => {
+    if (typeof window === 'undefined') return 0;
     try {
       const mealsStr = localStorage.getItem('navaura_saved_meals');
       if (mealsStr) {
         const m: SavedMeal[] = JSON.parse(mealsStr);
-        setMealsCount(m.length);
+        return m.length;
       }
     } catch {}
+    return 0;
+  });
 
+  const [wellnessScore, _setWellnessScore] = useState<number>(() => {
+    if (typeof window === 'undefined') return 3;
     try {
       const wellStr = localStorage.getItem('navaura_wellness_logs');
       if (wellStr) {
         const w: WellnessLog[] = JSON.parse(wellStr);
-        if (w.length > 0) setWellnessScore(w[0].energy_rating || 3);
+        if (w.length > 0) return w[0].energy_rating || 3;
       }
     } catch {}
+    return 3;
+  });
 
+  const [foodIntrosCount, _setFoodIntrosCount] = useState(() => {
+    if (typeof window === 'undefined') return 0;
     try {
       const introStr = localStorage.getItem('navaura_food_introductions');
       if (introStr) {
         const intros: FoodIntro[] = JSON.parse(introStr);
-        // Filter food introductions by selected child if child_id exists
-        const childIntros = selectedChildId
-          ? intros.filter((i) => !i.child_id || i.child_id === selectedChildId)
-          : intros;
-        setFoodIntrosCount(childIntros.length);
+        return intros.length;
       }
     } catch {}
+    return 0;
+  });
 
+  const [activeFilter, setActiveFilter] = useState('Recovery');
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'user' | 'ai'; text: string }>>([]);
+  const [isAnswering, setIsAnswering] = useState(false);
+  const [bookmarked, setBookmarked] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
     try {
       const bmStr = localStorage.getItem('navaura_bookmarks');
-      if (bmStr) setBookmarked(new Set(JSON.parse(bmStr)));
+      if (bmStr) return new Set(JSON.parse(bmStr));
     } catch {}
-  }, [selectedChildId]);
+    return new Set();
+  });
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -547,6 +553,34 @@ export default function DashboardPage() {
                 </div>
               </Link>
             </div>
+
+            {/* Talk to NavAura Voice AI Entry Card */}
+            <Link
+              href="/voice"
+              className="group relative overflow-hidden rounded-[32px] glass-card p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-white/90 bg-gradient-to-r from-[#FAF3F4] via-[#F3DCE1]/60 to-[#F2D0C1]/50 hover:shadow-md transition duration-300"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#D9A7AE] to-[#F3DCE1] flex items-center justify-center text-white shadow-[0_6px_20px_rgba(201,150,154,0.35)] group-hover:scale-105 transition shrink-0">
+                  <Mic className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/80 text-[10px] font-bold text-[#C9969A] uppercase tracking-wider mb-0.5">
+                    <Sparkles className="w-3 h-3" /> Voice AI • Emma
+                  </div>
+                  <h4 className="text-lg md:text-xl font-bold text-[#292628] font-serif">
+                    Need help without typing?
+                  </h4>
+                  <p className="text-xs text-[#4E4445]">
+                    Speak naturally with NavAura about feedings, water intake, meal ideas, or baby wellness.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#292628] text-white text-xs font-bold shadow-md group-hover:bg-[#4E4445] transition shrink-0">
+                <span>Talk to NavAura</span>
+                <ChevronRight className="w-4 h-4 text-[#EBC5D7]" />
+              </div>
+            </Link>
 
             {/* Recommended Care & Insights — Dynamic by Tab */}
             <div className="space-y-3.5 pt-1">

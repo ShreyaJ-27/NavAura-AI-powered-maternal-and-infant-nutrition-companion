@@ -14,7 +14,6 @@ import {
   Save,
   ShieldAlert,
   Sparkles,
-  User,
 } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 import { ChildSwitcher } from '@/components/child-switcher';

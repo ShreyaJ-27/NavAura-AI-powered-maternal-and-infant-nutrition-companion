@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Droplets, Plus, Trash2, Sparkles } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 
@@ -27,13 +27,9 @@ function saveToStorage(logs: HydrationLogRecord[]) {
 }
 
 export default function HydrationPage() {
-  const [logs, setLogs] = useState<HydrationLogRecord[]>([]);
+  const [logs, setLogs] = useState<HydrationLogRecord[]>(() => loadFromStorage());
   const [customMl, setCustomMl] = useState('');
   const [flash, setFlash] = useState('');
-
-  useEffect(() => {
-    setLogs(loadFromStorage());
-  }, []);
 
   function addWater(ml: number) {
     const newRecord: HydrationLogRecord = {

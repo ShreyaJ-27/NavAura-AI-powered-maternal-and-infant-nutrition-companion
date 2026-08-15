@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Heart, Moon, Smile, Sparkles, Trash2, Zap } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 
@@ -69,17 +69,13 @@ function RatingPills({
 }
 
 export default function WellnessPage() {
-  const [logs, setLogs] = useState<WellnessLogItem[]>([]);
+  const [logs, setLogs] = useState<WellnessLogItem[]>(() => loadFromStorage());
   const [energyRating, setEnergyRating] = useState<number>(4);
   const [restRating, setRestRating] = useState<number>(3);
   const [moodRating, setMoodRating] = useState<number>(4);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [savedMessage, setSavedMessage] = useState('');
-
-  useEffect(() => {
-    setLogs(loadFromStorage());
-  }, []);
 
   function handleCheckIn(e: React.FormEvent) {
     e.preventDefault();
