@@ -90,4 +90,4 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 ---
 
 ## 📄 License
-MIT License. Created with ❤️ for the CS Girlies Annual Hackathon — Technology For Wellness.
+Apache License Version 2.0. Created with ❤️ for the CS Girlies Annual Hackathon — Technology For Wellness.
