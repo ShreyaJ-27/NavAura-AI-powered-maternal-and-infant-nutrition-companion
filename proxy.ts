@@ -18,7 +18,7 @@ const protectedRoutes = [
   '/settings',
 ];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: request.headers } });
   const url = request.nextUrl.clone();
   const pathname = url.pathname;
@@ -61,5 +61,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/health|api/auth/demo).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/health|api/auth/demo|api/auth/signup|api/chat).*)'],
 };

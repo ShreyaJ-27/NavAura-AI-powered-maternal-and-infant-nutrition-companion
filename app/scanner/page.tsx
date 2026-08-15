@@ -84,9 +84,75 @@ export default function ScannerPage() {
     const t3 = setTimeout(() => setProgressStage(4), 1800);
 
     try {
+      // Load full profile from localStorage for personalized analysis
+      let babyAgeDays = 210;
+      let motherName = 'Mama';
+      let babyName = 'Baby';
+      let postpartumDay = 14;
+      let feedingMethod = 'mixed';
+      let motherComplications = 'None';
+      let children: Array<{name:string;ageMonths:number;ageFormatted:string;complications?:string}> = [];
+      let todayWaterMl = 0;
+      let wellnessScore = 3;
+
+      try {
+        const profStr = localStorage.getItem('navaura_profile_data');
+        if (profStr) {
+          const p = JSON.parse(profStr);
+          if (p.motherName) motherName = p.motherName;
+          if (p.feedingMethod) feedingMethod = p.feedingMethod;
+          if (p.motherComplications) motherComplications = p.motherComplications;
+          if (p.postpartumDate) {
+            const days = Math.floor((Date.now() - new Date(p.postpartumDate).getTime()) / (1000 * 86400));
+            postpartumDay = Math.max(1, days);
+          }
+          if (p.children && Array.isArray(p.children) && p.children.length > 0) {
+            children = p.children.map((c: {name:string;birthDate:string;complications?:string}) => {
+              const ageMs = Date.now() - new Date(c.birthDate).getTime();
+              const ageMonths = Math.floor(ageMs / (1000 * 86400 * 30.4));
+              return {
+                name: c.name || 'Baby',
+                ageMonths,
+                ageFormatted: `${ageMonths}m`,
+                complications: c.complications || 'None',
+              };
+            });
+            babyName = children[0].name;
+            babyAgeDays = children[0].ageMonths * 30;
+          } else if (p.babyName) {
+            babyName = p.babyName;
+            if (p.birthDate) {
+              const ageMs = Date.now() - new Date(p.birthDate).getTime();
+              babyAgeDays = Math.floor(ageMs / (1000 * 86400));
+            }
+          }
+        }
+        const hydStr = localStorage.getItem('navaura_hydration_logs');
+        if (hydStr) {
+          const logs = JSON.parse(hydStr);
+          const todayStr = new Date().toISOString().split('T')[0];
+          todayWaterMl = logs.filter((l: {logged_at:string}) => l.logged_at?.startsWith(todayStr)).reduce((s: number, l: {amount_ml:number}) => s + (l.amount_ml || 0), 0);
+        }
+        const wellStr = localStorage.getItem('navaura_wellness_logs');
+        if (wellStr) {
+          const w = JSON.parse(wellStr);
+          if (w.length > 0) wellnessScore = w[0].energy_rating || 3;
+        }
+      } catch {}
+
       const formData = new FormData();
       formData.append('image', selectedImage);
-      formData.append('babyAgeDays', '210');
+      formData.append('babyAgeDays', String(babyAgeDays));
+      formData.append('motherName', motherName);
+      formData.append('babyName', babyName);
+      formData.append('postpartumDay', String(postpartumDay));
+      formData.append('feedingMethod', feedingMethod);
+      formData.append('motherComplications', motherComplications);
+      formData.append('todayWaterMl', String(todayWaterMl));
+      formData.append('wellnessScore', String(wellnessScore));
+      if (children.length > 0) {
+        formData.append('children', JSON.stringify(children));
+      }
 
       const response = await fetch('/api/analyze-food', {
         method: 'POST',
