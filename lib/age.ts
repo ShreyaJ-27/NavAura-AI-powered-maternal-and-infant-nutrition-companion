@@ -14,8 +14,8 @@ export type PostpartumAge = {
 };
 
 export function calculateBabyAge(
-  birthDate: Date,
-  now: Date = new Date(),
+  birthDate: Date | string,
+  now: Date | string = new Date(),
 ): BabyAge {
   const start = new Date(birthDate);
   const current = new Date(now);
@@ -65,8 +65,8 @@ export function calculateBabyAge(
 }
 
 export function calculatePostpartumAge(
-  deliveryDate: Date,
-  now: Date = new Date(),
+  deliveryDate: Date | string,
+  now: Date | string = new Date(),
 ): PostpartumAge {
   const totalDays = Math.max(
     0,

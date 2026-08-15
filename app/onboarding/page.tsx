@@ -31,9 +31,7 @@ export default function OnboardingPage() {
 
   // Mother State
   const [motherName, setMotherName] = useState('');
-  const [deliveryDate, setDeliveryDate] = useState(
-    new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString().split('T')[0]
-  );
+  const [deliveryDate, setDeliveryDate] = useState('2026-07-01');
   const [feedingMethod, setFeedingMethod] = useState<FeedingMethodType>('mixed');
   const [dietaryRestrictions, setDietaryRestrictions] = useState('');
   const [motherComplications, setMotherComplications] = useState('');

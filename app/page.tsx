@@ -8,9 +8,9 @@ import {
   CheckCircle2,
   ChevronRight,
   Heart,
+  Mic,
   Sparkles,
   ShieldCheck,
-  Compass,
 } from 'lucide-react';
 import { JourneyOrb3D } from '@/components/journey-orb-3d';
 
@@ -191,6 +191,57 @@ export default function LandingPage() {
                   <span><strong>Solid Food Journey:</strong> Catalog single-ingredient introductions with tolerance &amp; reaction logs.</span>
                 </li>
               </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Voice AI Showcase Section */}
+      <section className="py-12 px-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="rounded-[40px] glass-panel p-8 md:p-12 border border-white/95 shadow-xl relative overflow-hidden bg-gradient-to-tr from-[#FAF3F4] via-white/80 to-[#F3DCE1]/40">
+            <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+              <div className="space-y-5">
+                <div className="inline-flex items-center gap-2 rounded-full bg-[#F3DCE1]/80 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#C9969A] shadow-xs">
+                  <Mic className="h-3.5 w-3.5" />
+                  Hands-Free Voice AI • Powered by Vapi & Groq
+                </div>
+
+                <h2 className="text-3xl md:text-4xl font-bold text-[#292628] font-serif leading-tight">
+                  Sometimes it&apos;s easier to talk.
+                </h2>
+
+                <p className="text-sm md:text-base text-[#4E4445] leading-relaxed max-w-xl">
+                  Ask NavAura about your day, your baby&apos;s feeding journey, hydration, meals, or wellness — without reaching for the keyboard. Dedicated, user-initiated, and built with multi-child intelligence.
+                </p>
+
+                <div className="flex flex-wrap items-center gap-4 pt-2">
+                  <Link
+                    href="/voice"
+                    className="inline-flex items-center gap-2.5 rounded-full bg-[#292628] px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#4E4445] active:scale-95"
+                  >
+                    <Mic className="h-4 w-4 text-[#EBC5D7]" />
+                    Talk to NavAura
+                  </Link>
+                  <Link
+                    href="/auth/sign-in"
+                    className="inline-flex items-center gap-2 rounded-full glass-card px-5 py-3 text-sm font-semibold text-[#292628] shadow-xs transition hover:bg-white"
+                  >
+                    Explore Voice Demo
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+
+              <div className="flex justify-center">
+                <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-gradient-to-tr from-[#F3DCE1] via-[#EBC5D7]/50 to-[#F2D0C1]/50 p-8 flex flex-col items-center justify-center text-center shadow-[0_16px_50px_rgba(201,150,154,0.25)] border-2 border-white">
+                  <div className="w-16 h-16 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#C9969A] mb-2 animate-pulse">
+                    <Mic className="w-8 h-8" />
+                  </div>
+                  <p className="text-xs font-bold text-[#292628]">NavAura Voice</p>
+                  <p className="text-[10px] text-[#827779]">Emma Voice · Groq Llama 3.3</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

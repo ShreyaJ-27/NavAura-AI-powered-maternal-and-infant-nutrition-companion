@@ -34,9 +34,7 @@ export default function ProfilePage() {
   // Child adding modal / inline form state
   const [isAddingChild, setIsAddingChild] = useState(false);
   const [newChildName, setNewChildName] = useState('');
-  const [newChildBirthDate, setNewChildBirthDate] = useState(
-    new Date(Date.now() - 6 * 30.4 * 24 * 3600 * 1000).toISOString().split('T')[0]
-  );
+  const [newChildBirthDate, setNewChildBirthDate] = useState('2026-02-01');
   const [newChildWeight, setNewChildWeight] = useState('7.0');
   const [newChildComplications, setNewChildComplications] = useState('');
 

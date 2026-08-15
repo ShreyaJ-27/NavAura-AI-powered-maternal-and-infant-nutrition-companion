@@ -4,8 +4,6 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import {
   ChildProfile,
   PROFILE_STORAGE_KEY,
-  SELECTED_CHILD_KEY,
-  ensureChildIds,
   generateChildId,
   getSelectedChild,
   loadChildrenFromStorage,
@@ -41,9 +39,7 @@ const ChildContext = createContext<ChildContextType | undefined>(undefined);
 
 export function ChildProvider({ children: reactChildren }: { children: React.ReactNode }) {
   const [motherName, setMotherName] = useState('Mama');
-  const [postpartumDate, setPostpartumDate] = useState(
-    new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString().split('T')[0]
-  );
+  const [postpartumDate, setPostpartumDate] = useState('2026-07-01');
   const [feedingMethod, setFeedingMethod] = useState('mixed');
   const [dietaryRestrictions, setDietaryRestrictions] = useState('');
   const [motherComplications, setMotherComplications] = useState('None');
@@ -94,7 +90,7 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
         }
 
         if (babiesRes.data && babiesRes.data.length > 0) {
-          const dbChildren: ChildProfile[] = babiesRes.data.map((b: any) => ({
+          const dbChildren: ChildProfile[] = babiesRes.data.map((b: { id: string; name?: string; birth_date: string; birth_weight_kg?: number | null; complications?: string | null; created_at?: string; updated_at?: string }) => ({
             id: b.id,
             name: b.name || 'Little One',
             birthDate: b.birth_date,
@@ -119,7 +115,7 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
   }, []);
 
   useEffect(() => {
-    loadData();
+    (async () => { await loadData(); })();
   }, [loadData]);
 
   const selectChild = (id: string) => {

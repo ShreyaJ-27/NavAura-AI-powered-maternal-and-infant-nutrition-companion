@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Compass, Plus, Trash2, Sparkles, CheckCircle2, Baby, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Compass, Plus, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 import { ChildSwitcher } from '@/components/child-switcher';
 import { useChildren } from '@/components/child-context';
@@ -43,7 +43,7 @@ const STATUS_BADGES: Record<string, { label: string; style: string }> = {
 
 export default function JourneyPage() {
   const { selectedChild, selectedChildId } = useChildren();
-  const [allIntroductions, setAllIntroductions] = useState<FoodIntroItem[]>([]);
+  const [allIntroductions, setAllIntroductions] = useState<FoodIntroItem[]>(() => loadFromStorage());
   const [foodName, setFoodName] = useState('');
   const [status, setStatus] = useState<FoodIntroItem['status']>('introduced');
   const [preparation, setPreparation] = useState('steamed');
@@ -51,10 +51,6 @@ export default function JourneyPage() {
   const [reactionNotes, setReactionNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    setAllIntroductions(loadFromStorage());
-  }, []);
 
   const currentChildId = selectedChildId || selectedChild?.id || '';
   const babyAge = selectedChild?.birthDate

@@ -52,7 +52,7 @@ Important Instructions:
 - Do NOT provide medical advice or nutrient numbers.
 - Return ONLY valid JSON, with no markdown code blocks or surrounding text.`;
 
-  let lastError: Error | null = null;
+  let _lastError: Error | null = null;
 
   for (const model of VISION_MODELS) {
     for (let attempt = 1; attempt <= 2; attempt++) {
@@ -116,7 +116,7 @@ Important Instructions:
         const parsed = JSON.parse(rawContent);
         return recognizedFoodSchema.parse(parsed);
       } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err));
+        _lastError = err instanceof Error ? err : new Error(String(err));
         await new Promise((res) => setTimeout(res, 800));
       }
     }

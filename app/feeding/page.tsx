@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Baby, Droplets, Plus, Trash2, Clock, Milk, Utensils, Heart, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Baby, Droplets, Plus, Trash2, Clock, Milk, Utensils, Heart } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 import { ChildSwitcher } from '@/components/child-switcher';
 import { useChildren } from '@/components/child-context';
-import { calculateBabyAge } from '@/lib/age';
 
 type FeedingLogRecord = {
   id: string;
@@ -23,7 +22,8 @@ const STORAGE_KEY = 'navaura_feeding_logs';
 function loadFromStorage(): FeedingLogRecord[] {
   if (typeof window === 'undefined') return [];
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
@@ -35,7 +35,7 @@ function saveToStorage(logs: FeedingLogRecord[]) {
 
 export default function FeedingPage() {
   const { selectedChild, selectedChildId } = useChildren();
-  const [allLogs, setAllLogs] = useState<FeedingLogRecord[]>([]);
+  const [allLogs, setAllLogs] = useState<FeedingLogRecord[]>(() => loadFromStorage());
   const [feedingType, setFeedingType] = useState<'breastfeeding' | 'expressed' | 'formula' | 'solids'>('breastfeeding');
   const [durationMinutes, setDurationMinutes] = useState('15');
   const [amountMl, setAmountMl] = useState('120');
@@ -44,14 +44,7 @@ export default function FeedingPage() {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    setAllLogs(loadFromStorage());
-  }, []);
-
   const currentChildId = selectedChildId || selectedChild?.id || '';
-  const babyAge = selectedChild?.birthDate
-    ? calculateBabyAge(new Date(selectedChild.birthDate))
-    : { days: 210, weeks: 30, months: 7, formatted: '7m' };
 
   // Filter logs strictly for selected child
   const childLogs = allLogs.filter((l) => {

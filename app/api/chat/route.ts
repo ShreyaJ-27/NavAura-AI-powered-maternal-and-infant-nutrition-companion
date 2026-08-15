@@ -98,7 +98,7 @@ MULTI-CHILD AI GUIDELINES:
       'llama-3.1-8b-instant',
     ];
 
-    let lastError = '';
+    let _lastError = '';
     for (const model of MODELS) {
       try {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -121,7 +121,7 @@ MULTI-CHILD AI GUIDELINES:
         if (!res.ok) {
           const errText = await res.text();
           if (res.status === 429) {
-            lastError = 'Rate limited';
+            _lastError = 'Rate limited';
             await new Promise((r) => setTimeout(r, 1000));
             continue;
           }
@@ -134,7 +134,7 @@ MULTI-CHILD AI GUIDELINES:
 
         return NextResponse.json({ reply });
       } catch (err) {
-        lastError = err instanceof Error ? err.message : String(err);
+        _lastError = err instanceof Error ? err.message : String(err);
         await new Promise((r) => setTimeout(r, 500));
       }
     }

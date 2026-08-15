@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Baby, Plus, Sparkles, X, Heart } from 'lucide-react';
+import { Baby, Plus, Sparkles, X } from 'lucide-react';
 import { useChildren } from './child-context';
 import { calculateBabyAge } from '@/lib/age';
 
@@ -21,9 +21,7 @@ export function ChildSwitcher({
 
   // Modal form state
   const [name, setName] = useState('');
-  const [birthDate, setBirthDate] = useState(
-    new Date(Date.now() - 6 * 30.4 * 24 * 3600 * 1000).toISOString().split('T')[0]
-  );
+  const [birthDate, setBirthDate] = useState('2026-02-01');
   const [weightKg, setWeightKg] = useState('7.0');
   const [complications, setComplications] = useState('');
   const [isSaving, setIsSaving] = useState(false);
