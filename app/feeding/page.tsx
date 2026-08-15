@@ -1,11 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Baby, Droplets, Plus, Trash2, Clock, Milk, Utensils, Heart } from 'lucide-react';
+import { Baby, Droplets, Plus, Trash2, Clock, Milk, Utensils, Heart, AlertCircle } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
+import { ChildSwitcher } from '@/components/child-switcher';
+import { useChildren } from '@/components/child-context';
+import { calculateBabyAge } from '@/lib/age';
 
 type FeedingLogRecord = {
   id: string;
+  child_id?: string;
   feeding_type: string;
   duration_minutes?: number;
   amount_ml?: number;
@@ -30,7 +34,8 @@ function saveToStorage(logs: FeedingLogRecord[]) {
 }
 
 export default function FeedingPage() {
-  const [logs, setLogs] = useState<FeedingLogRecord[]>([]);
+  const { selectedChild, selectedChildId } = useChildren();
+  const [allLogs, setAllLogs] = useState<FeedingLogRecord[]>([]);
   const [feedingType, setFeedingType] = useState<'breastfeeding' | 'expressed' | 'formula' | 'solids'>('breastfeeding');
   const [durationMinutes, setDurationMinutes] = useState('15');
   const [amountMl, setAmountMl] = useState('120');
@@ -40,16 +45,29 @@ export default function FeedingPage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    setLogs(loadFromStorage());
+    setAllLogs(loadFromStorage());
   }, []);
+
+  const currentChildId = selectedChildId || selectedChild?.id || '';
+  const babyAge = selectedChild?.birthDate
+    ? calculateBabyAge(new Date(selectedChild.birthDate))
+    : { days: 210, weeks: 30, months: 7, formatted: '7m' };
+
+  // Filter logs strictly for selected child
+  const childLogs = allLogs.filter((l) => {
+    if (!l.child_id) return true; // Legacy fallback
+    return l.child_id === currentChildId;
+  });
 
   async function handleAddLog(e: React.FormEvent) {
     e.preventDefault();
+    if (!currentChildId) return;
     setLoading(true);
     setSaved(false);
 
     const newRecord: FeedingLogRecord = {
       id: crypto.randomUUID(),
+      child_id: currentChildId,
       feeding_type: feedingType,
       duration_minutes: feedingType === 'breastfeeding' ? (Number(durationMinutes) || 15) : undefined,
       amount_ml: feedingType !== 'breastfeeding' ? (Number(amountMl) || 120) : undefined,
@@ -58,8 +76,8 @@ export default function FeedingPage() {
       logged_at: new Date().toISOString(),
     };
 
-    const updated = [newRecord, ...logs];
-    setLogs(updated);
+    const updated = [newRecord, ...allLogs];
+    setAllLogs(updated);
     saveToStorage(updated);
 
     try {
@@ -67,6 +85,7 @@ export default function FeedingPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          babyId: currentChildId,
           feedingType,
           durationMinutes: feedingType === 'breastfeeding' ? Number(durationMinutes) : null,
           amountMl: feedingType !== 'breastfeeding' ? Number(amountMl) : null,
@@ -84,18 +103,20 @@ export default function FeedingPage() {
   }
 
   function deleteLog(id: string) {
-    const updated = logs.filter((l) => l.id !== id);
-    setLogs(updated);
+    const updated = allLogs.filter((l) => l.id !== id);
+    setAllLogs(updated);
     saveToStorage(updated);
   }
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const todayLogs = logs.filter((l) => l.logged_at.startsWith(todayStr));
+  const todayLogs = childLogs.filter((l) => l.logged_at.startsWith(todayStr));
 
   return (
     <AppShell title="Infant Feeding Tracker">
-      <div className="space-y-8 max-w-5xl mx-auto">
-        
+      <div className="space-y-6 max-w-5xl mx-auto">
+        {/* Child Switcher */}
+        <ChildSwitcher />
+
         {/* Form Glass Card */}
         <section className="rounded-[36px] glass-card p-6 md:p-8 border border-white/95 bg-white/80 shadow-md">
           <div className="flex items-center gap-3 mb-6">
@@ -104,7 +125,9 @@ export default function FeedingPage() {
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#C9969A]">Infant Care &amp; Nutrition</p>
-              <h3 className="text-xl font-bold text-[#292628] font-serif">Log Feeding Activity</h3>
+              <h3 className="text-xl font-bold text-[#292628] font-serif">
+                Log Feeding Activity for {selectedChild?.name || 'Baby'}
+              </h3>
             </div>
           </div>
 

@@ -43,7 +43,7 @@ async function handleDemo() {
       }
 
       if (demoUser) {
-        // Ensure profile & baby exist
+        // Ensure profile exists
         await admin.from('profiles').upsert({
           id: demoUser.id,
           mother_name: 'Elena Vance',
@@ -51,14 +51,92 @@ async function handleDemo() {
           feeding_method: 'mixed',
           allergen_awareness: 'default',
           dietary_restrictions: 'Focusing on iron, choline, and gentle recovery foods',
+          mother_complications: 'Mild Anaemia',
         });
 
-        await admin.from('babies').upsert({
+        // Calculate birthdates for Ava (8 months) & Mira (2 months)
+        const now = new Date();
+        const avaBirth = new Date(now);
+        avaBirth.setMonth(avaBirth.getMonth() - 8);
+        const miraBirth = new Date(now);
+        miraBirth.setMonth(miraBirth.getMonth() - 2);
+
+        // Delete existing demo babies to ensure clean state
+        await admin.from('babies').delete().eq('user_id', demoUser.id);
+
+        // Insert Child 1: Ava (8m, Complementary Solids stage)
+        const { data: ava } = await admin.from('babies').insert({
           user_id: demoUser.id,
-          name: 'Maya',
-          birth_date: '2025-11-20',
-          birth_weight_kg: 3.4,
-        });
+          name: 'Ava',
+          birth_date: avaBirth.toISOString().split('T')[0],
+          birth_weight_kg: 8.2,
+          complications: 'None',
+        }).select().single();
+
+        // Insert Child 2: Mira (2m, Exclusive Milk stage)
+        const { data: mira } = await admin.from('babies').insert({
+          user_id: demoUser.id,
+          name: 'Mira',
+          birth_date: miraBirth.toISOString().split('T')[0],
+          birth_weight_kg: 5.1,
+          complications: 'GERD / Mild reflux',
+        }).select().single();
+
+        // Seed demo feeding logs for Ava & Mira if available
+        if (ava && mira) {
+          await admin.from('feeding_logs').delete().eq('user_id', demoUser.id);
+          await admin.from('feeding_logs').insert([
+            {
+              user_id: demoUser.id,
+              baby_id: ava.id,
+              feeding_type: 'solids',
+              food_name: 'Steamed Sweet Potato Puree (smooth)',
+              notes: 'Ate 3 tablespoons, loved natural sweetness.',
+              logged_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+            },
+            {
+              user_id: demoUser.id,
+              baby_id: ava.id,
+              feeding_type: 'breastfeeding',
+              duration_minutes: 18,
+              notes: 'Morning nursing session',
+              logged_at: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
+            },
+            {
+              user_id: demoUser.id,
+              baby_id: mira.id,
+              feeding_type: 'expressed',
+              amount_ml: 90,
+              notes: 'Kept upright for 25 mins after feed for reflux.',
+              logged_at: new Date(Date.now() - 1 * 3600 * 1000).toISOString(),
+            },
+          ]);
+
+          // Seed demo food introductions for Ava
+          await admin.from('food_introductions').delete().eq('user_id', demoUser.id);
+          await admin.from('food_introductions').insert([
+            {
+              user_id: demoUser.id,
+              baby_id: ava.id,
+              food_name: 'Sweet Potato',
+              status: 'introduced',
+              preparation: 'Steamed & fork-mashed',
+              texture: 'Smooth puree',
+              reaction_notes: 'Well tolerated, clear skin',
+              introduced_date: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString().split('T')[0],
+            },
+            {
+              user_id: demoUser.id,
+              baby_id: ava.id,
+              food_name: 'Banana',
+              status: 'introduced',
+              preparation: 'Fresh ripe mashed',
+              texture: 'Soft mash',
+              reaction_notes: 'Loved taste, no discomfort',
+              introduced_date: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString().split('T')[0],
+            },
+          ]);
+        }
       }
     }
 

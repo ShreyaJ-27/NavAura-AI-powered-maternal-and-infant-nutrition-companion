@@ -5,17 +5,20 @@ import { useState } from 'react';
 import { Baby, Check, ChevronRight, Sparkles, Heart, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { calculateBabyAge, calculatePostpartumAge } from '@/lib/age';
+import { generateChildId, saveChildrenToStorage, PROFILE_STORAGE_KEY } from '@/lib/children';
 
 type FeedingMethodType = 'exclusive-breastfeeding' | 'mixed' | 'formula';
 
-type ChildProfile = {
+type ChildProfileInput = {
+  id: string;
   name: string;
   birthDate: string;
   weightKg: string;
   complications: string;
 };
 
-const defaultChild = (): ChildProfile => ({
+const defaultChild = (): ChildProfileInput => ({
+  id: generateChildId(),
   name: '',
   birthDate: new Date(Date.now() - 7 * 30.4 * 24 * 3600 * 1000).toISOString().split('T')[0],
   weightKg: '7.5',
@@ -36,7 +39,7 @@ export default function OnboardingPage() {
   const [motherComplications, setMotherComplications] = useState('');
 
   // Children State (support multiple)
-  const [children, setChildren] = useState<ChildProfile[]>([defaultChild()]);
+  const [children, setChildren] = useState<ChildProfileInput[]>([defaultChild()]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -52,7 +55,7 @@ export default function OnboardingPage() {
     setChildren((prev) => prev.filter((_, i) => i !== idx));
   }
 
-  function updateChild(idx: number, field: keyof ChildProfile, value: string) {
+  function updateChild(idx: number, field: keyof ChildProfileInput, value: string) {
     setChildren((prev) => prev.map((c, i) => (i === idx ? { ...c, [field]: value } : c)));
   }
 
@@ -69,26 +72,30 @@ export default function OnboardingPage() {
     setLoading(true);
     setError('');
 
+    const formattedChildren = children.map((c, i) => ({
+      id: c.id || generateChildId(),
+      name: c.name || `Child ${i + 1}`,
+      birthDate: c.birthDate,
+      weightKg: Number(c.weightKg) || 7.5,
+      complications: c.complications || 'None',
+    }));
+
     const profileData = {
       motherName: motherName || 'Mama',
       postpartumDate: deliveryDate,
       feedingMethod,
       dietaryRestrictions,
       motherComplications: motherComplications || 'None',
-      children: children.map((c) => ({
-        name: c.name || 'Little One',
-        birthDate: c.birthDate,
-        weightKg: Number(c.weightKg) || 7.5,
-        complications: c.complications || 'None',
-      })),
-      // Keep legacy single-baby fields for backward compat
-      babyName: children[0]?.name || 'Little One',
-      birthDate: children[0]?.birthDate || '',
-      weightKg: Number(children[0]?.weightKg) || 7.5,
+      children: formattedChildren,
+      // Legacy single-baby fields for backward compat
+      babyName: formattedChildren[0]?.name || 'Little One',
+      birthDate: formattedChildren[0]?.birthDate || '',
+      weightKg: formattedChildren[0]?.weightKg || 7.5,
     };
 
     try {
-      localStorage.setItem('navaura_profile_data', JSON.stringify(profileData));
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profileData));
+      saveChildrenToStorage(formattedChildren, formattedChildren[0].id);
     } catch {}
 
     try {
@@ -106,15 +113,16 @@ export default function OnboardingPage() {
           allergen_awareness: 'default',
         });
 
-        // Upsert all babies
-        for (const child of profileData.children) {
-          await supabase.from('babies').insert({
+        // Upsert all babies into Supabase
+        for (const child of formattedChildren) {
+          await supabase.from('babies').upsert({
+            id: child.id,
             user_id: user.id,
             name: child.name,
             birth_date: child.birthDate,
             birth_weight_kg: child.weightKg,
             complications: child.complications,
-          }).select();
+          });
         }
       }
     } catch {

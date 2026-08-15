@@ -46,18 +46,24 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { feedingType, durationMinutes, amountMl, foodName, notes } = body;
+    const { babyId, feedingType, durationMinutes, amountMl, foodName, notes } = body;
 
     if (!feedingType) {
       return NextResponse.json({ error: 'Feeding type is required' }, { status: 400 });
     }
 
-    const { data: baby } = await supabase.from('babies').select('id').eq('user_id', user.id).single();
+    let targetBabyId = babyId || null;
+    if (!targetBabyId) {
+      const { data: babies } = await supabase.from('babies').select('id').eq('user_id', user.id);
+      if (babies && babies.length > 0) {
+        targetBabyId = babies[0].id;
+      }
+    }
 
     const record = {
       id: crypto.randomUUID(),
       user_id: user.id,
-      baby_id: baby?.id || null,
+      baby_id: targetBabyId,
       feeding_type: feedingType,
       duration_minutes: durationMinutes ? Number(durationMinutes) : null,
       amount_ml: amountMl ? Number(amountMl) : null,

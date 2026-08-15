@@ -30,13 +30,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: validation.reason }, { status: 400 });
     }
 
+    const targetRecipient = String(formData.get('targetRecipient') || 'everyone');
+    const selectedChildId = String(formData.get('selectedChildId') || '');
+
     // Parse children profiles if provided
-    let children: Array<{ name: string; ageMonths: number; ageFormatted: string; complications?: string }> = [];
+    let children: Array<{ id?: string; name: string; ageMonths: number; ageFormatted: string; complications?: string }> = [];
     if (childrenRaw) {
       try {
         const parsed = JSON.parse(String(childrenRaw));
         if (Array.isArray(parsed)) {
           children = parsed.map((c) => ({
+            id: c.id,
             name: c.name || babyName,
             ageMonths: c.ageMonths ?? Math.floor(babyAgeDays / 30.4),
             ageFormatted: c.ageFormatted ?? `${Math.floor(babyAgeDays / 30.4)}m`,
@@ -57,25 +61,43 @@ export async function POST(request: Request) {
       }];
     }
 
+    // Find targeted child if recipient is a specific child
+    const targetedChild = children.find((c) => c.id === targetRecipient || c.id === selectedChildId) || children[0];
+
     // 1. Call Groq Vision
     const analysis = await callGroqVision(image);
     const safeResult = recognizedFoodSchema.parse(analysis);
 
-    // 2. Evaluate each detected food item for all children
+    // 2. Evaluate each detected food item for all children individually
     const detectedItems = safeResult.foods.map((food) => {
       const nutrition = lookupVerifiedNutrition(food.name);
-      // Evaluate safety for primary baby (first child)
+
+      // Evaluate safety for targeted child
       const safety = evaluateSafetyEngine({
-        babyAgeDays: children[0].ageMonths * 30,
+        babyAgeDays: targetedChild.ageMonths * 30,
         foodName: food.name,
         texture: 'soft',
         preparation: 'cooked',
       });
 
+      // Evaluate safety for ALL children
+      const childEvaluations = children.map((c) => ({
+        childId: c.id,
+        childName: c.name,
+        ageFormatted: c.ageFormatted,
+        safety: evaluateSafetyEngine({
+          babyAgeDays: c.ageMonths * 30,
+          foodName: food.name,
+          texture: 'soft',
+          preparation: 'cooked',
+        }),
+      }));
+
       return {
         ...food,
         verifiedNutrition: nutrition,
         safety,
+        childEvaluations,
       };
     });
 
@@ -95,15 +117,20 @@ export async function POST(request: Request) {
         month: Math.floor(postpartumDay / 30.4),
         stage: postpartumStageLabel,
       },
-      babyName,
+      babyName: targetedChild.name,
       babyAge: calculateBabyAge(
-        new Date(Date.now() - babyAgeDays * 24 * 3600 * 1000),
+        new Date(Date.now() - targetedChild.ageMonths * 30.4 * 24 * 3600 * 1000),
         new Date()
       ),
       feedingMethod,
       motherComplications,
-      babyComplications: children[0]?.complications,
-      children,
+      babyComplications: targetedChild.complications,
+      children: children.map((c) => ({
+        name: c.name,
+        ageMonths: c.ageMonths,
+        ageFormatted: c.ageFormatted,
+        complications: c.complications,
+      })),
       recentWaterTotalMl: todayWaterMl,
       recentWellnessEnergy: wellnessScore,
       detectedFoods: detectedItems.map((item) => ({
@@ -132,7 +159,7 @@ export async function POST(request: Request) {
       {
         step: '04',
         title: 'Personalized Insight Synthesis',
-        desc: `Dual-panel guidance tailored to ${motherName} (day ${postpartumDay}) and ${children.length > 1 ? `${children.length} children` : `${children[0].name}'s developmental stage`}.`,
+        desc: `Dual-panel guidance tailored to ${motherName} (day ${postpartumDay}) and ${children.length > 1 ? `all ${children.length} children individually` : `${children[0].name}'s developmental stage`}.`,
       },
     ];
 
@@ -143,6 +170,7 @@ export async function POST(request: Request) {
       personalization,
       explainableSteps,
       children,
+      targetedChild,
     });
   } catch (error) {
     console.error('Food analysis error:', error);

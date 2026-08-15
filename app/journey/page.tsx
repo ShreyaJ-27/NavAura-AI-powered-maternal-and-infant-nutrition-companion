@@ -1,11 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Compass, Plus, Trash2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Compass, Plus, Trash2, Sparkles, CheckCircle2, Baby, AlertCircle } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
+import { ChildSwitcher } from '@/components/child-switcher';
+import { useChildren } from '@/components/child-context';
+import { calculateBabyAge } from '@/lib/age';
+import { calculateChildStage } from '@/lib/children';
 
 type FoodIntroItem = {
   id: string;
+  child_id?: string;
   food_name: string;
   status: 'introduced' | 'recently_introduced' | 'planned' | 'caution';
   preparation: string;
@@ -37,7 +42,8 @@ const STATUS_BADGES: Record<string, { label: string; style: string }> = {
 };
 
 export default function JourneyPage() {
-  const [introductions, setIntroductions] = useState<FoodIntroItem[]>([]);
+  const { selectedChild, selectedChildId } = useChildren();
+  const [allIntroductions, setAllIntroductions] = useState<FoodIntroItem[]>([]);
   const [foodName, setFoodName] = useState('');
   const [status, setStatus] = useState<FoodIntroItem['status']>('introduced');
   const [preparation, setPreparation] = useState('steamed');
@@ -47,17 +53,30 @@ export default function JourneyPage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    setIntroductions(loadFromStorage());
+    setAllIntroductions(loadFromStorage());
   }, []);
+
+  const currentChildId = selectedChildId || selectedChild?.id || '';
+  const babyAge = selectedChild?.birthDate
+    ? calculateBabyAge(new Date(selectedChild.birthDate))
+    : { days: 210, weeks: 30, months: 7, formatted: '7m' };
+  const babyStage = calculateChildStage(babyAge.months);
+
+  // Filter food introductions strictly for selected child
+  const childIntroductions = allIntroductions.filter((item) => {
+    if (!item.child_id) return true; // Legacy fallback
+    return item.child_id === currentChildId;
+  });
 
   function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!foodName.trim()) return;
+    if (!foodName.trim() || !currentChildId) return;
     setLoading(true);
     setSaved(false);
 
     const newItem: FoodIntroItem = {
       id: crypto.randomUUID(),
+      child_id: currentChildId,
       food_name: foodName.trim(),
       status,
       preparation,
@@ -66,8 +85,8 @@ export default function JourneyPage() {
       introduced_date: new Date().toISOString().split('T')[0],
     };
 
-    const updated = [newItem, ...introductions];
-    setIntroductions(updated);
+    const updated = [newItem, ...allIntroductions];
+    setAllIntroductions(updated);
     saveToStorage(updated);
 
     setFoodName('');
@@ -79,19 +98,65 @@ export default function JourneyPage() {
     fetch('/api/food-introduction', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ foodName, status, preparation, texture, reactionNotes }),
+      body: JSON.stringify({
+        babyId: currentChildId,
+        foodName,
+        status,
+        preparation,
+        texture,
+        reactionNotes,
+      }),
     }).catch(() => {});
   }
 
   function deleteItem(id: string) {
-    const updated = introductions.filter((i) => i.id !== id);
-    setIntroductions(updated);
+    const updated = allIntroductions.filter((i) => i.id !== id);
+    setAllIntroductions(updated);
     saveToStorage(updated);
   }
 
   return (
     <AppShell title="Baby Solid Food Journey">
-      <div className="space-y-8 max-w-5xl mx-auto">
+      <div className="space-y-6 max-w-5xl mx-auto">
+        {/* Child Switcher Header */}
+        <ChildSwitcher />
+
+        {/* Selected Child Growth Banner */}
+        {selectedChild && (
+          <div className="rounded-[32px] glass-card p-6 border border-white/95 bg-gradient-to-r from-amber-50/90 via-rose-50/70 to-purple-50/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-800 font-bold text-xl shadow-xs font-serif">
+                {selectedChild.name.slice(0, 1)}
+              </div>
+              <div>
+                <div className="flex items-baseline gap-2">
+                  <h3 className="text-xl font-bold text-[#292628] font-serif">{selectedChild.name}&apos;s Journey</h3>
+                  <span className="text-xs font-bold text-amber-800 bg-white/80 px-2.5 py-0.5 rounded-full border border-white">
+                    {babyAge.formatted} ({babyAge.months}m)
+                  </span>
+                </div>
+                <p className="text-xs text-[#4E4445] mt-0.5 font-medium">{babyStage}</p>
+                {selectedChild.complications && selectedChild.complications !== 'None' && (
+                  <p className="text-[11px] text-amber-900 font-semibold mt-1 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" /> Note: {selectedChild.complications}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 text-xs font-semibold text-[#4E4445]">
+              <div className="rounded-2xl bg-white/80 px-4 py-2 text-center border border-white shadow-xs">
+                <span className="text-[10px] text-[#827779] block uppercase">Weight</span>
+                <span className="font-bold text-[#292628]">{selectedChild.weightKg || 7.5} kg</span>
+              </div>
+              <div className="rounded-2xl bg-white/80 px-4 py-2 text-center border border-white shadow-xs">
+                <span className="text-[10px] text-[#827779] block uppercase">Foods Tracked</span>
+                <span className="font-bold text-[#292628]">{childIntroductions.length}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Form Glass Card */}
         <section className="rounded-[38px] glass-card p-6 md:p-8 border border-white/95 bg-white/80 shadow-md">
           <div className="flex items-center gap-3 mb-6">
@@ -100,7 +165,9 @@ export default function JourneyPage() {
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-800">Infant Complementary Feeding</p>
-              <h3 className="text-xl font-bold text-[#292628] font-serif">Record Single Food Introduction</h3>
+              <h3 className="text-xl font-bold text-[#292628] font-serif">
+                Record Food Introduction for {selectedChild?.name || 'Baby'}
+              </h3>
             </div>
           </div>
 
@@ -174,7 +241,7 @@ export default function JourneyPage() {
               } disabled:opacity-50`}
             >
               <Plus className="h-4 w-4 text-[#EBC5D7]" />
-              {loading ? 'Saving...' : saved ? '✓ Food Entry Catalogued!' : 'Catalogue Food Introduction'}
+              {loading ? 'Saving...' : saved ? `✓ Food Entry Saved for ${selectedChild?.name}!` : `Catalogue Food Entry for ${selectedChild?.name || 'Baby'}`}
             </button>
           </form>
         </section>
@@ -183,16 +250,16 @@ export default function JourneyPage() {
         <section className="rounded-[38px] glass-card p-6 md:p-8 border border-white/95 bg-white/80 shadow-md">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-[#292628] font-serif">
-              Introduced Solid Foods Catalog ({introductions.length})
+              {selectedChild?.name}&apos;s Introduced Foods Catalog ({childIntroductions.length})
             </h3>
             <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-amber-900 border border-white shadow-xs">
               WHO 3-Day Rule Active
             </span>
           </div>
 
-          {introductions.length > 0 ? (
+          {childIntroductions.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {introductions.map((item) => {
+              {childIntroductions.map((item) => {
                 const badge = STATUS_BADGES[item.status] || STATUS_BADGES.introduced;
                 return (
                   <div
@@ -235,7 +302,7 @@ export default function JourneyPage() {
             <div className="text-center py-8 space-y-2">
               <div className="h-10 w-10 rounded-full orb-glow-amber mx-auto opacity-70" />
               <p className="text-xs text-[#827779] italic">
-                No solid foods catalogued yet. Add your baby&apos;s first taste above!
+                No solid foods catalogued yet for {selectedChild?.name || 'this child'}. Add {selectedChild?.name || 'baby'}&apos;s first taste above!
               </p>
             </div>
           )}

@@ -14,9 +14,9 @@ export async function GET() {
     }
 
     // Parallel queries to Supabase
-    const [profileRes, babyRes, mealsRes, feedingRes, hydrationRes, wellnessRes, introRes] = await Promise.all([
+    const [profileRes, babiesRes, mealsRes, feedingRes, hydrationRes, wellnessRes, introRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', user.id).single(),
-      supabase.from('babies').select('*').eq('user_id', user.id).single(),
+      supabase.from('babies').select('*').eq('user_id', user.id),
       supabase.from('meals').select('*, meal_items(*)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
       supabase.from('feeding_logs').select('*').eq('user_id', user.id).order('logged_at', { ascending: false }).limit(10),
       supabase.from('hydration_logs').select('*').eq('user_id', user.id).order('logged_at', { ascending: false }),
@@ -25,7 +25,8 @@ export async function GET() {
     ]);
 
     const profile = profileRes.data;
-    const baby = babyRes.data;
+    const babies = babiesRes.data || [];
+    const baby = babies[0] || null;
     const meals = mealsRes.data || [];
     const feedingLogs = feedingRes.data || [];
     const hydrationLogs = hydrationRes.data || [];
@@ -51,6 +52,7 @@ export async function GET() {
       data: {
         profile,
         baby,
+        babies,
         postpartumStage,
         babyAge,
         todayHydrationMl,
