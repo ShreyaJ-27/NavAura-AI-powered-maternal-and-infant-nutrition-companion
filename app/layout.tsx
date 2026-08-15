@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { ChildProvider } from '@/components/child-context';
 
 export const metadata: Metadata = {
   title: 'NavAura | One Plate. Two Journeys.',
@@ -17,7 +18,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ChildProvider>{children}</ChildProvider>
+      </body>
     </html>
   );
 }
+

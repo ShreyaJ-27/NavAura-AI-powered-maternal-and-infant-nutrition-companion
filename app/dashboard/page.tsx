@@ -23,13 +23,14 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
+import { ChildSwitcher } from '@/components/child-switcher';
+import { useChildren } from '@/components/child-context';
 import { calculateBabyAge, calculatePostpartumAge } from '@/lib/age';
 
 type HydrationLog = { amount_ml: number; logged_at: string };
 type WellnessLog = { energy_rating: number; rest_rating: number; mood_rating: number; logged_at: string };
-type FoodIntro = { id: string; food_name: string; status: string };
+type FoodIntro = { id: string; food_name: string; status: string; child_id?: string };
 type SavedMeal = { id: string; food_name: string; created_at: string };
-type ChildProfile = { name: string; birthDate: string; weightKg: number; complications?: string };
 
 type InsightCard = {
   id: string;
@@ -145,7 +146,7 @@ function getInsightCards(
         {
           id: 'baby-2',
           title: '3-Day Rule Tracker',
-          subtitle: `${foodIntrosCount} foods catalogued — introduce one new food every 3 days to monitor tolerance`,
+          subtitle: `${foodIntrosCount} foods catalogued for ${babyName} — introduce one new food every 3 days to monitor tolerance`,
           gradient: 'from-[#DDE9DF] via-[#E7D0AA] to-white',
           icon: <Sparkles className="h-5 w-5 text-emerald-700" />,
           href: '/journey',
@@ -228,14 +229,16 @@ function getInsightCards(
 }
 
 export default function DashboardPage() {
-  const [motherName, setMotherName] = useState('Mama');
-  const [postpartumDate, setPostpartumDate] = useState(
-    new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString().split('T')[0]
-  );
-  const [feedingMethod, setFeedingMethod] = useState('mixed');
-  const [dietaryRestrictions, setDietaryRestrictions] = useState('');
-  const [motherComplications, setMotherComplications] = useState('None');
-  const [children, setChildren] = useState<ChildProfile[]>([]);
+  const {
+    motherName,
+    postpartumDate,
+    feedingMethod,
+    dietaryRestrictions,
+    motherComplications,
+    children,
+    selectedChildId,
+    selectedChild,
+  } = useChildren();
 
   const [waterMl, setWaterMl] = useState(0);
   const [mealsCount, setMealsCount] = useState(0);
@@ -250,23 +253,6 @@ export default function DashboardPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    try {
-      const profStr = localStorage.getItem('navaura_profile_data');
-      if (profStr) {
-        const p = JSON.parse(profStr);
-        if (p.motherName) setMotherName(p.motherName);
-        if (p.postpartumDate) setPostpartumDate(p.postpartumDate);
-        if (p.feedingMethod) setFeedingMethod(p.feedingMethod);
-        if (p.dietaryRestrictions) setDietaryRestrictions(p.dietaryRestrictions);
-        if (p.motherComplications) setMotherComplications(p.motherComplications);
-        if (p.children && Array.isArray(p.children)) setChildren(p.children);
-        else if (p.babyName) {
-          // Legacy single-baby format
-          setChildren([{ name: p.babyName, birthDate: p.birthDate || '', weightKg: p.weightKg || 7.5, complications: 'None' }]);
-        }
-      }
-    } catch {}
-
     try {
       const hydStr = localStorage.getItem('navaura_hydration_logs');
       if (hydStr) {
@@ -299,7 +285,11 @@ export default function DashboardPage() {
       const introStr = localStorage.getItem('navaura_food_introductions');
       if (introStr) {
         const intros: FoodIntro[] = JSON.parse(introStr);
-        setFoodIntrosCount(intros.length);
+        // Filter food introductions by selected child if child_id exists
+        const childIntros = selectedChildId
+          ? intros.filter((i) => !i.child_id || i.child_id === selectedChildId)
+          : intros;
+        setFoodIntrosCount(childIntros.length);
       }
     } catch {}
 
@@ -307,7 +297,7 @@ export default function DashboardPage() {
       const bmStr = localStorage.getItem('navaura_bookmarks');
       if (bmStr) setBookmarked(new Set(JSON.parse(bmStr)));
     } catch {}
-  }, []);
+  }, [selectedChildId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -315,14 +305,14 @@ export default function DashboardPage() {
 
   const postpartumStage = calculatePostpartumAge(new Date(postpartumDate), new Date());
 
-  // Primary baby (first child)
-  const primaryChild = children[0];
-  const babyAge = primaryChild?.birthDate
-    ? calculateBabyAge(new Date(primaryChild.birthDate), new Date())
+  // Selected child age calculation
+  const targetChild = selectedChild || children[0];
+  const babyAge = targetChild?.birthDate
+    ? calculateBabyAge(new Date(targetChild.birthDate), new Date())
     : { days: 0, weeks: 0, months: 7, years: 0, formatted: '7m' };
-  const babyName = primaryChild?.name || 'Little One';
+  const babyName = targetChild?.name || 'Little One';
 
-  // Multiple children greeting
+  // Multiple children greeting format
   const allChildrenNames =
     children.length === 0
       ? 'Little One'
@@ -363,7 +353,9 @@ export default function DashboardPage() {
       todayWaterMl: waterMl,
       wellnessScore,
       mealsLogged: mealsCount,
+      selectedChildId,
       children: children.map((c) => ({
+        id: c.id,
         name: c.name || 'Little One',
         ageMonths: c.birthDate ? calculateBabyAge(new Date(c.birthDate)).months : 7,
         ageFormatted: c.birthDate ? calculateBabyAge(new Date(c.birthDate)).formatted : '7m',
@@ -416,7 +408,10 @@ export default function DashboardPage() {
 
   return (
     <AppShell title="Dashboard">
-      <div className="space-y-7">
+      <div className="space-y-5">
+        {/* Multi-Child Switcher */}
+        <ChildSwitcher />
+
         {/* Filter Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-semibold">
           {['Recovery', 'Lactation', 'Baby Solids', 'Hydration', 'Mindfulness'].map((tab) => (

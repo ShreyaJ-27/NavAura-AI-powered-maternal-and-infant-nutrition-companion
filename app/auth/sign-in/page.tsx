@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { initializeDemoData } from '@/lib/demo';
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');
@@ -34,6 +35,9 @@ export default function SignInPage() {
     setDemoLoading(true);
 
     try {
+      // Seed client-side local storage with Ava & Mira demo data
+      initializeDemoData();
+
       const res = await fetch('/api/auth/demo', { method: 'POST' });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Demo init failed');

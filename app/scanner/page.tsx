@@ -15,7 +15,25 @@ import {
   ShieldAlert,
   Sparkles,
 } from 'lucide-react';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import {
+  AlertCircle,
+  Baby,
+  Camera,
+  Check,
+  Heart,
+  Info,
+  RefreshCw,
+  Save,
+  ShieldAlert,
+  Sparkles,
+  User,
+} from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
+import { ChildSwitcher } from '@/components/child-switcher';
+import { useChildren } from '@/components/child-context';
+import { calculateBabyAge } from '@/lib/age';
 
 type DetectedItem = {
   name: string;
@@ -37,6 +55,17 @@ type DetectedItem = {
     allergenWarnings?: string[];
     evidence?: { organization: string; recommendation: string }[];
   };
+  childEvaluations?: Array<{
+    childId?: string;
+    childName: string;
+    ageFormatted: string;
+    safety: {
+      statusBadge?: { label: string; variant: string };
+      chokingConsiderations?: string[];
+      textureAdjustments?: string[];
+      allergenWarnings?: string[];
+    };
+  }>;
 };
 
 type AnalysisPayload = {
@@ -47,9 +76,20 @@ type AnalysisPayload = {
     babyObservation?: { title: string; body: string; stageContext: string; textureNote: string };
   };
   explainableSteps?: { step: string; title: string; desc: string }[];
+  targetedChild?: { name: string; ageFormatted: string };
 };
 
 export default function ScannerPage() {
+  const {
+    motherName,
+    postpartumDate,
+    feedingMethod,
+    motherComplications,
+    children,
+    selectedChildId,
+    selectedChild,
+  } = useChildren();
+
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -60,6 +100,7 @@ export default function ScannerPage() {
   const [error, setError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [targetRecipient, setTargetRecipient] = useState<string>('everyone');
 
   function handleFileSelect(file: File | undefined) {
     if (!file) return;
@@ -84,49 +125,20 @@ export default function ScannerPage() {
     const t3 = setTimeout(() => setProgressStage(4), 1800);
 
     try {
-      // Load full profile from localStorage for personalized analysis
-      let babyAgeDays = 210;
-      let motherName = 'Mama';
-      let babyName = 'Baby';
+      const activeChild = selectedChild || children[0];
+      const babyAgeDays = activeChild?.birthDate
+        ? calculateBabyAge(new Date(activeChild.birthDate)).days
+        : 210;
+
       let postpartumDay = 14;
-      let feedingMethod = 'mixed';
-      let motherComplications = 'None';
-      let children: Array<{name:string;ageMonths:number;ageFormatted:string;complications?:string}> = [];
+      if (postpartumDate) {
+        const days = Math.floor((Date.now() - new Date(postpartumDate).getTime()) / (1000 * 86400));
+        postpartumDay = Math.max(1, days);
+      }
+
       let todayWaterMl = 0;
       let wellnessScore = 3;
-
       try {
-        const profStr = localStorage.getItem('navaura_profile_data');
-        if (profStr) {
-          const p = JSON.parse(profStr);
-          if (p.motherName) motherName = p.motherName;
-          if (p.feedingMethod) feedingMethod = p.feedingMethod;
-          if (p.motherComplications) motherComplications = p.motherComplications;
-          if (p.postpartumDate) {
-            const days = Math.floor((Date.now() - new Date(p.postpartumDate).getTime()) / (1000 * 86400));
-            postpartumDay = Math.max(1, days);
-          }
-          if (p.children && Array.isArray(p.children) && p.children.length > 0) {
-            children = p.children.map((c: {name:string;birthDate:string;complications?:string}) => {
-              const ageMs = Date.now() - new Date(c.birthDate).getTime();
-              const ageMonths = Math.floor(ageMs / (1000 * 86400 * 30.4));
-              return {
-                name: c.name || 'Baby',
-                ageMonths,
-                ageFormatted: `${ageMonths}m`,
-                complications: c.complications || 'None',
-              };
-            });
-            babyName = children[0].name;
-            babyAgeDays = children[0].ageMonths * 30;
-          } else if (p.babyName) {
-            babyName = p.babyName;
-            if (p.birthDate) {
-              const ageMs = Date.now() - new Date(p.birthDate).getTime();
-              babyAgeDays = Math.floor(ageMs / (1000 * 86400));
-            }
-          }
-        }
         const hydStr = localStorage.getItem('navaura_hydration_logs');
         if (hydStr) {
           const logs = JSON.parse(hydStr);
@@ -140,18 +152,28 @@ export default function ScannerPage() {
         }
       } catch {}
 
+      const formattedChildren = children.map((c) => ({
+        id: c.id,
+        name: c.name,
+        ageMonths: c.birthDate ? calculateBabyAge(new Date(c.birthDate)).months : 7,
+        ageFormatted: c.birthDate ? calculateBabyAge(new Date(c.birthDate)).formatted : '7m',
+        complications: c.complications || 'None',
+      }));
+
       const formData = new FormData();
       formData.append('image', selectedImage);
       formData.append('babyAgeDays', String(babyAgeDays));
       formData.append('motherName', motherName);
-      formData.append('babyName', babyName);
+      formData.append('babyName', activeChild?.name || 'Baby');
       formData.append('postpartumDay', String(postpartumDay));
       formData.append('feedingMethod', feedingMethod);
       formData.append('motherComplications', motherComplications);
       formData.append('todayWaterMl', String(todayWaterMl));
       formData.append('wellnessScore', String(wellnessScore));
-      if (children.length > 0) {
-        formData.append('children', JSON.stringify(children));
+      formData.append('targetRecipient', targetRecipient);
+      formData.append('selectedChildId', selectedChildId || activeChild?.id || '');
+      if (formattedChildren.length > 0) {
+        formData.append('children', JSON.stringify(formattedChildren));
       }
 
       const response = await fetch('/api/analyze-food', {
@@ -233,18 +255,66 @@ export default function ScannerPage() {
 
   return (
     <AppShell title="AI Meal Scanner">
-      <div className="space-y-8 max-w-5xl mx-auto">
+      <div className="space-y-6 max-w-5xl mx-auto">
+        {/* Multi-Child Switcher */}
+        <ChildSwitcher />
+
         {/* Upload & Scanner Card */}
         <section className="rounded-[36px] glass-card p-6 md:p-8 border border-white/95 bg-white/80 shadow-md">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#C9969A]">Groq Vision AI</p>
               <h3 className="text-2xl font-bold text-[#292628] font-serif">Photograph Your Plate</h3>
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1 text-xs font-bold text-[#4E4445] border border-white shadow-xs">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1 text-xs font-bold text-[#4E4445] border border-white shadow-xs self-start sm:self-auto">
               <Sparkles className="h-3.5 w-3.5 text-[#C9969A]" />
               Vision Ready
             </span>
+          </div>
+
+          {/* Target Recipient Selector Pill Group */}
+          <div className="mb-6 rounded-2xl bg-white/70 border border-white p-3 space-y-2">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4E4445]">
+              Who is this meal for?
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setTargetRecipient('everyone')}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                  targetRecipient === 'everyone'
+                    ? 'bg-[#292628] text-white shadow-xs'
+                    : 'bg-white/80 text-[#4E4445] hover:bg-white border border-stone-200'
+                }`}
+              >
+                🍽️ Everyone / Shared Meal
+              </button>
+              <button
+                type="button"
+                onClick={() => setTargetRecipient('mother')}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                  targetRecipient === 'mother'
+                    ? 'bg-[#292628] text-white shadow-xs'
+                    : 'bg-white/80 text-[#4E4445] hover:bg-white border border-stone-200'
+                }`}
+              >
+                🤍 {motherName} (Mother Only)
+              </button>
+              {children.map((child) => (
+                <button
+                  key={child.id}
+                  type="button"
+                  onClick={() => setTargetRecipient(child.id)}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                    targetRecipient === child.id
+                      ? 'bg-[#C9969A] text-white shadow-xs'
+                      : 'bg-white/80 text-[#4E4445] hover:bg-white border border-stone-200'
+                  }`}
+                >
+                  👶 {child.name} (Child)
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -442,32 +512,60 @@ export default function ScannerPage() {
                   </span>
                 </div>
 
-                {/* Safety Considerations */}
-                <div className="space-y-3 text-xs text-[#4E4445]">
-                  {primaryFood.safety?.chokingConsiderations?.length ? (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-3.5 flex items-start gap-2.5 text-rose-900 font-medium">
-                      <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5 text-rose-600" />
-                      <span>{primaryFood.safety.chokingConsiderations[0]}</span>
-                    </div>
-                  ) : null}
-
-                  <div className="rounded-2xl bg-white/80 p-4 border border-white shadow-xs space-y-1">
-                    <p className="font-bold text-[#292628] font-serif">{analysisData.personalization?.babyObservation?.stageContext}</p>
-                    <p className="text-[#4E4445]">{analysisData.personalization?.babyObservation?.body}</p>
-                    <p className="text-amber-800 font-semibold pt-1">Texture: {analysisData.personalization?.babyObservation?.textureNote}</p>
-                  </div>
-
-                  {primaryFood.safety?.evidence?.[0] && (
-                    <div className="rounded-2xl bg-stone-100/70 p-3 border border-white">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#827779]">
-                        Evidence • {primaryFood.safety.evidence[0].organization}
+                  {/* Multi-Child Specific Evaluations */}
+                  {primaryFood.childEvaluations && primaryFood.childEvaluations.length > 1 && (
+                    <div className="space-y-2 pt-1 border-t border-amber-100">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-amber-900">
+                        Individual Child Safety Evaluations
                       </p>
-                      <p className="mt-0.5 text-[#4E4445] italic">&quot;{primaryFood.safety.evidence[0].recommendation}&quot;</p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {primaryFood.childEvaluations.map((cEval, idx) => (
+                          <div key={idx} className="rounded-2xl bg-white/90 p-3 border border-stone-200/80 shadow-xs space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs text-[#292628] font-serif">
+                                👶 {cEval.childName} ({cEval.ageFormatted})
+                              </span>
+                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200">
+                                {cEval.safety.statusBadge?.label || 'Evaluated'}
+                              </span>
+                            </div>
+                            {cEval.safety.chokingConsiderations?.length ? (
+                              <p className="text-[10px] text-rose-700 font-medium">⚠️ {cEval.safety.chokingConsiderations[0]}</p>
+                            ) : (
+                              <p className="text-[10px] text-emerald-800 font-medium">✓ Suitable texture for stage</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
+
+                  {/* Safety Considerations */}
+                  <div className="space-y-3 text-xs text-[#4E4445]">
+                    {primaryFood.safety?.chokingConsiderations?.length ? (
+                      <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-3.5 flex items-start gap-2.5 text-rose-900 font-medium">
+                        <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5 text-rose-600" />
+                        <span>{primaryFood.safety.chokingConsiderations[0]}</span>
+                      </div>
+                    ) : null}
+
+                    <div className="rounded-2xl bg-white/80 p-4 border border-white shadow-xs space-y-1">
+                      <p className="font-bold text-[#292628] font-serif">{analysisData.personalization?.babyObservation?.stageContext}</p>
+                      <p className="text-[#4E4445]">{analysisData.personalization?.babyObservation?.body}</p>
+                      <p className="text-amber-800 font-semibold pt-1">Texture: {analysisData.personalization?.babyObservation?.textureNote}</p>
+                    </div>
+
+                    {primaryFood.safety?.evidence?.[0] && (
+                      <div className="rounded-2xl bg-stone-100/70 p-3 border border-white">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#827779]">
+                          Evidence • {primaryFood.safety.evidence[0].organization}
+                        </p>
+                        <p className="mt-0.5 text-[#4E4445] italic">&quot;{primaryFood.safety.evidence[0].recommendation}&quot;</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
             {/* Explainable AI Timeline */}
             <div className="rounded-[32px] glass-card p-7 border border-white/95 bg-white/80 shadow-sm">

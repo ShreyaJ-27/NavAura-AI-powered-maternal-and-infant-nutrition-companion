@@ -45,18 +45,24 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { foodName, status, preparation, texture, reactionNotes, introducedDate } = body;
+    const { babyId, foodName, status, preparation, texture, reactionNotes, introducedDate } = body;
 
     if (!foodName) {
       return NextResponse.json({ error: 'Food name is required' }, { status: 400 });
     }
 
-    const { data: baby } = await supabase.from('babies').select('id').eq('user_id', user.id).single();
+    let targetBabyId = babyId || null;
+    if (!targetBabyId) {
+      const { data: babies } = await supabase.from('babies').select('id').eq('user_id', user.id);
+      if (babies && babies.length > 0) {
+        targetBabyId = babies[0].id;
+      }
+    }
 
     const record = {
       id: crypto.randomUUID(),
       user_id: user.id,
-      baby_id: baby?.id || null,
+      baby_id: targetBabyId,
       food_name: foodName,
       status: status || 'introduced',
       preparation: preparation || 'steamed',
