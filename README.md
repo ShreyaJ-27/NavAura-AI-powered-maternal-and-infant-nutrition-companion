@@ -44,12 +44,12 @@
 ### 1. Clone & Install Dependencies
 ```bash
 git clone https://github.com/ViivianREINE/NavAura-AI-powered-maternal-and-infant-nutrition-companion.git
-cd NavAura-AI-powered-maternal-and-infant-nutrition-companion/navaura
+cd NavAura-AI-powered-maternal-and-infant-nutrition-companion
 npm install
 ```
 
 ### 2. Configure Environment Variables
-Create a `.env.local` file in the `navaura/` directory:
+Create a `.env.local` file in the root directory:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-supabase-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
@@ -68,17 +68,15 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ## ☁️ Deployment Instructions (Vercel)
 
-1. **Push to GitHub** (already configured on the `main` branch).
-2. Go to **[Vercel Dashboard](https://vercel.com/new)** and import your repository:
-   - **Root Directory**: Select `navaura`.
-   - **Framework Preset**: `Next.js`.
+1. Go to **[Vercel Dashboard](https://vercel.com/new)** and import your repository.
+2. **Framework Preset**: `Next.js` (Root Directory: `./` by default).
 3. **Add Environment Variables in Vercel Project Settings**:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `GROQ_API_KEY`
    - `GROQ_MODEL`
-4. Click **Deploy**. Vercel will build and launch the production URL.
+4. Click **Deploy**. Vercel will automatically build and deploy the Next.js application.
 
 ---
 

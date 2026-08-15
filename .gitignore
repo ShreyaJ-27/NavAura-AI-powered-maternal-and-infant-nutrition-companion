@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-navaura/node_modules/
 .pnp
 .pnp.js
 
@@ -10,19 +9,16 @@ Datasets/
 *.xlsx
 *.parquet
 
-# Next.js build
-navaura/.next/
+# Next.js Build Artifacts
 .next/
 out/
 build/
 dist/
 
-# Environment Variables
+# Environment Variables & Secrets
 .env
 .env*.local
-navaura/.env
-navaura/.env*.local
-navaura/.env.local
+.env.local
 
 # Vercel
 .vercel/
@@ -34,7 +30,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# OS and Editor
+# OS & Editor
 .DS_Store
 *.pem
 .idea/
